@@ -4,6 +4,7 @@
   (:import
    (cucumber.runtime Backend
                      BackendSupplier
+                     HookDefinition
                      StepDefinition)
    (cucumber.runtime.snippets Concatenator
                               FunctionNameGenerator
@@ -46,6 +47,14 @@
       (isScenarioScoped [_]
         false))))
 
+(defn- make-hook-def [order fn file line]
+  (reify HookDefinition
+    (getLocation [_ detail] (str file ":" line))
+    (execute [_ scenario] (fn))
+    (matches [_ tags] true)
+    (getOrder [_] order)
+    (isScenarioScoped [_] false)))
+
 (def ^:private snippet-generator
   (SnippetGenerator.
    (reify Snippet
@@ -80,18 +89,29 @@
      (concatenate [_ words]
        (str/join "-" words)))))
 
-(defn- create-clj-backend [steps]
-  (reify Backend
-    (loadGlue [this glue gluePaths]
-      (doseq [{:keys [kw pattern fn file line]} steps]
-        (.addStepDefinition glue (make-step-def pattern fn nil file line))))
+(defn- create-clj-backend [steps-or-hooks]
+  (let [{steps :step, hooks :hook} (group-by :type steps-or-hooks)]
+    (reify Backend
+      (loadGlue [this glue gluePaths]
+        ;; register hooks
+        (doseq [{:keys [phase order fn file line]} hooks
+                :let [hook-def (make-hook-def order fn file line)]]
+          (case phase
+            :before (.addBeforeHook glue hook-def)
+            :after (.addAfterHook glue hook-def)
+            :before-step (.addBeforeStepHook glue hook-def)
+            :after-step (.addAfterStepHook glue hook-def)))
 
-    (buildWorld [this])
-    (disposeWorld [this])
+        ;; register steps
+        (doseq [{:keys [kw pattern fn file line]} steps]
+          (.addStepDefinition glue (make-step-def pattern fn nil file line))))
 
-    ;; List<String> getSnippet(PickleStep step, String keyword, FunctionNameGenerator functionNameGenerator);
-    (getSnippet [this step kw _]
-      (.getSnippet snippet-generator step kw clj-function-name-generator))))
+      (buildWorld [this])
+      (disposeWorld [this])
+
+      ;; List<String> getSnippet(PickleStep step, String keyword, FunctionNameGenerator functionNameGenerator);
+      (getSnippet [this step kw _]
+        (.getSnippet snippet-generator step kw clj-function-name-generator)))))
 
 (defn- create-cucumber-runtime [args steps]
   (let [backend (create-clj-backend steps)]
@@ -113,12 +133,24 @@
            Subgroups matched in `pattern` are provided as parameters."
   [kw pattern fn]
   (let [line (:line (meta &form))]
-    `{:kw ~kw
+    `{:type :step
+      :kw ~kw
       :pattern ~pattern
       :fn ~fn
       :line ~line
       :file ~*file*}))
 
+;; phase: :before :after :before-step :after-step
+(defmacro hook
+  "Create a hook map"
+  [phase fn]
+  (let [line (:line (meta &form))]
+    `{:type :hook
+      :phase ~phase
+      :order 0
+      :fn ~fn
+      :line ~line
+      :file ~*file*}))
 
 (defn run-cucumber
   "Run the cucumber features at `features-path` using the given `steps`.
