@@ -1,0 +1,140 @@
+* mullr.clj-cucumber
+A more idiomatic and up-to-date binding of JVM cucumber to Clojure. Very light
+on global state, and suitable for repl-based development.
+
+** Usage
+*** Add the dependency
+Add it to your deps.edn
+
+#+begin_src clojure
+  {:deps
+   {:git/url "https://github.com/mullr/clj-cucumber"
+    :sha "<>"}}
+#+end_src
+
+*** Make a feature file
+Make a feature file, and put it somewhere in your source tree. =test/features=
+is a handy location.
+
+#+begin_src feature
+  Feature: A passing feature
+    Scenario: Successful test
+      Given some setup
+      When I do a thing
+      Then the setup happened
+      And the thing happened
+#+end_src
+*** Make a test file
+Make a regular clojure test, and call =run-cucumber= test from it. 
+
+#+begin_src clojure
+  (ns cucumber-test
+    (:require [clojure.test :refer :all]
+              [mullr.clj-cucumber :refer [run-cucumber step]]))
+
+  (def test-state (atom {}))
+
+  (def steps
+    [])
+
+  (deftest cucumber
+    (is (= 0 (run-cucumber "test/features/passing.feature" steps))))
+#+end_src
+
+*** Run the tests and copy the template step defs
+Run your test in whatever way you do normally, then see what was printed. Copy
+the step templates into your list of steps.
+
+#+begin_src sh :results verbatim
+  clj -A:test:runner
+#+end_src
+
+#+RESULTS:
+#+begin_example
+<snip>
+
+You can implement missing steps with the snippets below:
+
+(step :Given #"^some setup$"
+      (fn some-setup []
+        (comment  Write code here that turns the phrase above into concrete actions)
+        (throw (cucumber.api.PendingException.))))
+
+(step :When #"^I do a thing$"
+      (fn I-do-a-thing []
+        (comment  Write code here that turns the phrase above into concrete actions)
+        (throw (cucumber.api.PendingException.))))
+
+(step :Then #"^the setup happened$"
+      (fn the-setup-happened []
+        (comment  Write code here that turns the phrase above into concrete actions)
+        (throw (cucumber.api.PendingException.))))
+
+(step :Then #"^the thing happened$"
+      (fn the-thing-happened []
+        (comment  Write code here that turns the phrase above into concrete actions)
+        (throw (cucumber.api.PendingException.))))
+#+end_example
+
+*** Fill in the blank
+Fill out the body as appropriate.
+
+#+begin_src clojure
+  (def test-state (atom {}))
+
+  (def steps
+    [(step :Given #"^some setup$"
+           (fn some-setup []
+             (reset! test-state nil)
+             (swap! test-state assoc :setup-happened true)))
+
+     (step :When #"^I do a thing$"
+           (fn I-do-a-thing []
+             (swap! test-state assoc :thing-happened true)))
+
+     (step :Then #"^the setup happened$"
+           (fn the-setup-happened []
+             (assert (:setup-happened @test-state))))
+
+     (step :Then #"^the thing happened$"
+           (fn the-thing-happened []
+             (assert (:thing-happened @test-state))))])
+#+end_src
+
+*NB* You should use =assert= in your step defs rather than clojure.test's =
+macro, so the cucumber test runner can observe the assertion failures.
+
+*** Happily run your now-passing tests
+#+begin_src sh :results verbatim
+  clj -A:test:runner
+#+end_src
+
+#+RESULTS:
+#+begin_example
+
+Running tests in #{"test"}
+
+Testing cucumber-test
+Feature: A passing feature
+
+  Scenario: Successful test # test/features/my.feature:2
+    Given some setup        # cucumber_test.clj:8
+    When I do a thing       # cucumber_test.clj:13
+    Then the setup happened # cucumber_test.clj:17
+    And the thing happened  # cucumber_test.clj:21
+
+1 Scenarios (1 passed)
+4 Steps (4 passed)
+0m0.019s
+
+
+Ran 1 tests containing 1 assertions.
+0 failures, 0 errors.
+#+end_example
+
+
+** License
+Copyright © 2019 Russell Mull
+
+Distributed under the Eclipse Public License either version 1.0 or (at
+your option) any later version.
