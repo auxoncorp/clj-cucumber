@@ -49,7 +49,6 @@ the step templates into your list of steps.
   clj -A:test:runner
 #+end_src
 
-#+RESULTS:
 #+begin_example
 <snip>
 
@@ -109,7 +108,6 @@ macro, so the cucumber test runner can observe the assertion failures.
   clj -A:test:runner
 #+end_src
 
-#+RESULTS:
 #+begin_example
 
 Running tests in #{"test"}
