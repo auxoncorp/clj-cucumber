@@ -1,6 +1,6 @@
 * mullr.clj-cucumber
-A more idiomatic and up-to-date binding of JVM cucumber to Clojure. Very light
-on global state, and suitable for repl-based development.
+A more idiomatic and up-to-date binding of JVM cucumber to Clojure. No global
+state, and suitable for repl-based development.
 
 ** Usage
 *** Add the dependency
@@ -130,7 +130,19 @@ Ran 1 tests containing 1 assertions.
 0 failures, 0 errors.
 #+end_example
 
+** Hooks
+You can add hooks, too, alongside your steps. Use the =hook= macro to make them.
+#+begin_src clojure
+  (def steps
+    ;; these happen before and after the senario
+    [(hook :before (fn before-hook [] ...)
+     (hook :after (fn after-hook [] ...)
+     ;; these happen before and after each step
+     (hook :before-step (fn after-step-hook [] ...)
+     (hook :after-step (fn after-step-hook [] ...)
 
+     (step :Given ...)])
+#+end_src
 ** License
 Copyright © 2019 Russell Mull
 
