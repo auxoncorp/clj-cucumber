@@ -7,8 +7,8 @@ state, and suitable for repl-based development.
 Add it to your deps.edn
 
 #+begin_src clojure
-  {:deps mullr/clj-cucumber {:git/url "https://github.com/mullr/clj-cucumber"
-                             :sha "<>"}}
+  {:deps {mullr/clj-cucumber {:git/url "https://github.com/mullr/clj-cucumber"
+                              :sha "<>"}}}
 #+end_src
 
 *** Make a feature file
