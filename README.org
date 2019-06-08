@@ -24,7 +24,7 @@ is a handy location.
       And the thing happened
 #+end_src
 *** Make a test file
-Make a regular clojure test, and call =run-cucumber= test from it. 
+Make a regular clojure test, and call =run-cucumber= from it. 
 
 #+begin_src clojure
   (ns cucumber-test
@@ -133,11 +133,11 @@ Ran 1 tests containing 1 assertions.
 You can add hooks, too, alongside your steps. Use the =hook= macro to make them.
 #+begin_src clojure
   (def steps
-    ;; these happen before and after the senario
+    ;; these happen before and after the scenario
     [(hook :before (fn before-hook [] ...)
      (hook :after (fn after-hook [] ...)
      ;; these happen before and after each step
-     (hook :before-step (fn after-step-hook [] ...)
+     (hook :before-step (fn before-step-hook [] ...)
      (hook :after-step (fn after-step-hook [] ...)
 
      (step :Given ...)])
