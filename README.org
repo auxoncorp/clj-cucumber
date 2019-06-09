@@ -129,6 +129,16 @@ Ran 1 tests containing 1 assertions.
 0 failures, 0 errors.
 #+end_example
 
+* Other Features
+** Parameters
+As with most cucumber implementations, regex subgroups are turned into paramters to your step functions. 
+#+begin_src clojure
+  (def steps
+   [(step :When #"^I do (\d+) things$"
+           (fn I-do-int-things [x]
+             ...))])
+#+end_src
+
 ** Hooks
 You can add hooks, too, alongside your steps. Use the =hook= macro to make them.
 #+begin_src clojure
