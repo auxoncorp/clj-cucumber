@@ -1,4 +1,4 @@
-* mullr.clj-cucumber
+* auxon.clj-cucumber
 A more idiomatic and up-to-date binding of JVM cucumber to Clojure. No global
 state, and suitable for repl-based development.
 
@@ -7,7 +7,7 @@ state, and suitable for repl-based development.
 Add it to your deps.edn
 
 #+begin_src clojure
-  {:deps {mullr/clj-cucumber {:git/url "https://github.com/mullr/clj-cucumber"
+  {:deps {auxon/clj-cucumber {:git/url "https://github.com/auxon/clj-cucumber"
                               :sha "<>"}}}
 #+end_src
 
@@ -29,7 +29,7 @@ Make a regular clojure test, and call =run-cucumber= from it.
 #+begin_src clojure
   (ns cucumber-test
     (:require [clojure.test :refer :all]
-              [mullr.clj-cucumber :refer [run-cucumber step]]))
+              [auxon.clj-cucumber :refer [run-cucumber step]]))
 
   (def test-state (atom {}))
 

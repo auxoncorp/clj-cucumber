@@ -1,6 +1,6 @@
-(ns mullr.clj-cucumber-test
+(ns auxon.clj-cucumber-test
   (:require [clojure.test :refer :all]
-            [mullr.clj-cucumber :refer [run-cucumber step hook]]))
+            [auxon.clj-cucumber :refer [run-cucumber step hook]]))
 
 (def test-state (atom {}))
 
@@ -51,10 +51,10 @@
              "after" (assert (= val (:after-step-count @test-state))))))])
 
 (deftest passing-feature
-  (is (= 0 (run-cucumber "test/mullr/features/passing.feature" steps)))
+  (is (= 0 (run-cucumber "test/auxon/features/passing.feature" steps)))
   ;; Can't check this inside the spec because it doesn't happen until after it's
   ;; done
   (is (:after-hook-happened @test-state)))
 
 (deftest failing-feature
-  (is (= 1 (run-cucumber "test/mullr/features/failing.feature" steps))))
+  (is (= 1 (run-cucumber "test/auxon/features/failing.feature" steps))))
