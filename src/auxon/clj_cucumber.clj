@@ -20,7 +20,7 @@
   (StepExpressionFactory.
    (TypeRegistry. java.util.Locale/ENGLISH)))
 
-(defn- make-step-def [pattern step-fn arg-count file line]
+(defn- make-step-def [pattern step-fn arg-count file line state-atom update-state?]
   (let [expression (.createExpression step-expr-factory (str pattern))
         arg-matcher (ExpressionArgumentMatcher. expression)
         arg-types (make-array java.lang.reflect.Type 0)]
@@ -35,7 +35,9 @@
         nil)
 
       (execute [_ args]
-        (apply step-fn args))
+        (let [new-state (apply step-fn @state-atom args)]
+          (when update-state?
+            (reset! state-atom new-state))))
 
       (isDefinedAt [_ stack-trace-element]
         (and (= (.getLineNumber stack-trace-element) line)
@@ -47,10 +49,12 @@
       (isScenarioScoped [_]
         false))))
 
-(defn- make-hook-def [order fn file line]
+(defn- make-hook-def [order f file line state-atom]
   (reify HookDefinition
     (getLocation [_ detail] (str file ":" line))
-    (execute [_ scenario] (fn))
+    (execute [_ scenario]
+      (let [new-state (f @state-atom)]
+        (reset! state-atom new-state)))
     (matches [_ tags] true)
     (getOrder [_] order)
     (isScenarioScoped [_] false)))
@@ -68,7 +72,7 @@
 
        (str
         "(step :{0} #\"^{1}$\"\n"
-        "      (fn {2} [{3}]\n"
+        "      (fn {2} [state {3}]\n"
         "        (comment  {4})\n"
         "        (throw (cucumber.api.PendingException.))))\n"))
 
@@ -89,13 +93,13 @@
      (concatenate [_ words]
        (str/join "-" words)))))
 
-(defn- create-clj-backend [steps-or-hooks]
+(defn- create-clj-backend [steps-or-hooks state-atom]
   (let [{steps :step, hooks :hook} (group-by :type steps-or-hooks)]
     (reify Backend
       (loadGlue [this glue gluePaths]
         ;; register hooks
         (doseq [{:keys [phase order fn file line]} hooks
-                :let [hook-def (make-hook-def order fn file line)]]
+                :let [hook-def (make-hook-def order fn file line state-atom)]]
           (case phase
             :before (.addBeforeHook glue hook-def)
             :after (.addAfterHook glue hook-def)
@@ -104,7 +108,11 @@
 
         ;; register steps
         (doseq [{:keys [kw pattern fn file line]} steps]
-          (.addStepDefinition glue (make-step-def pattern fn nil file line))))
+          (.addStepDefinition glue (make-step-def pattern fn
+                                                  nil ; arg-count
+                                                  file line state-atom
+                                                  ;; Allow state updates for Givens and Whens
+                                                  (#{:Given :When} kw)))))
 
       (buildWorld [this])
       (disposeWorld [this])
@@ -113,8 +121,8 @@
       (getSnippet [this step kw _]
         (.getSnippet snippet-generator step kw clj-function-name-generator)))))
 
-(defn- create-cucumber-runtime [args steps]
-  (let [backend (create-clj-backend steps)]
+(defn- create-cucumber-runtime [args steps state-atom]
+  (let [backend (create-clj-backend steps state-atom)]
     (.. (cucumber.runtime.Runtime/builder)
         (withArgs args)
         (withClassLoader (.getContextClassLoader (Thread/currentThread)))
@@ -161,6 +169,7 @@
   (let [args ["--plugin" "pretty"
               "--monochrome"
               features-path]
-        runtime (create-cucumber-runtime args steps)]
+        state-atom (atom nil)
+        runtime (create-cucumber-runtime args steps state-atom)]
     (.run runtime)
     (.exitStatus runtime)))

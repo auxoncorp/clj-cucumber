@@ -1,60 +1,63 @@
 (ns auxon.clj-cucumber-test
-  (:require [clojure.test :refer :all]
-            [auxon.clj-cucumber :refer [run-cucumber step hook]]))
+  (:require
+   [auxon.clj-cucumber :refer [hook run-cucumber step]]
+   [clojure.test :refer :all]))
 
-(def test-state (atom {}))
+;; (def test-state (atom {}))
+
+(def after-hook-happened (atom false))
 
 (def steps
   [(hook :before
-         (fn before-hook []
-           (reset! test-state
-                   {:before-hook-happened true
-                    :before-step-count 0
-                    :after-step-count 0})))
+         (fn before-hook [_]
+           {:before-hook-happened true
+            :before-step-count 0
+            :after-step-count 0}))
 
    (hook :before-step
-         (fn before-step-hook []
-           (swap! test-state update :before-step-count inc)))
+         (fn before-step-hook [state]
+           (update state :before-step-count inc)))
 
    (hook :after-step
-         (fn after-step-hook []
-           (swap! test-state update :after-step-count inc)))
+         (fn after-step-hook [state]
+           (update state :after-step-count inc)))
 
    (hook :after
-         (fn after-hook []
-           (swap! test-state assoc :after-hook-happened true)))
+         (fn after-hook [state]
+           (reset! after-hook-happened true)
+           state))
 
    (step :Given #"^some setup$"
-         (fn some-setup []
-           (swap! test-state assoc :setup-happened true)))
+         (fn some-setup [state]
+           (assoc state :setup-happened true)))
 
    (step :When #"^I do a thing$"
-         (fn I-do-a-thing []
-           (swap! test-state assoc :thing-happened true)))
+         (fn I-do-a-thing [state]
+           (assoc state :thing-happened true)))
 
    (step :Then #"^the setup happened$"
-         (fn the-setup-happened []
-           (assert (:setup-happened @test-state))))
+         (fn the-setup-happened [state]
+           (assert (:setup-happened state))))
 
    (step :Then #"^the before hook happened$"
-         (fn the-before-hook-happened []
-           (assert (:before-hook-happened @test-state))))
+         (fn the-before-hook-happened [state]
+           (assert (:before-hook-happened state))))
 
    (step :Then #"^the thing happened$"
-         (fn the-thing-happened []
-           (assert (:thing-happened @test-state))))
+         (fn the-thing-happened [state]
+           (assert (:thing-happened state))))
 
    (step :Then #"^the (\w+) step counter is (\d+)$"
-         (fn the-step-counter-is [kind val]
+         (fn the-step-counter-is [state kind val]
            (case kind
-             "before" (assert (= val (:before-step-count @test-state)))
-             "after" (assert (= val (:after-step-count @test-state))))))])
+             "before" (assert (= val (:before-step-count state)))
+             "after" (assert (= val (:after-step-count state))))))])
 
 (deftest passing-feature
   (is (= 0 (run-cucumber "test/auxon/features/passing.feature" steps)))
   ;; Can't check this inside the spec because it doesn't happen until after it's
   ;; done
-  (is (:after-hook-happened @test-state)))
+  (is @after-hook-happened))
 
 (deftest failing-feature
   (is (= 1 (run-cucumber "test/auxon/features/failing.feature" steps))))
