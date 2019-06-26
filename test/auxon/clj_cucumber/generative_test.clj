@@ -4,8 +4,7 @@
    [auxon.clj-cucumber.generative :as cgen :refer (generator property)]
    [clojure.test :refer :all]
    [clojure.test.check :as tc]
-   [clojure.test.check.generators :as gen]
-   [clojure.test.check.properties :as prop]))
+   [clojure.test.check.generators :as gen]))
 
 (def steps
   [cgen/before-hook
