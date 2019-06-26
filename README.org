@@ -1,6 +1,7 @@
 * auxon.clj-cucumber
 A more idiomatic and up-to-date binding of JVM cucumber to Clojure. No global
-state, and suitable for repl-based development.
+state, and suitable for repl-based development. Also lets you write proptests
+with Gherkin syntax.
 
 ** Usage
 *** Add the dependency
@@ -54,22 +55,22 @@ the step templates into your list of steps.
 You can implement missing steps with the snippets below:
 
 (step :Given #"^some setup$"
-      (fn some-setup []
+      (fn some-setup [state]
         (comment  Write code here that turns the phrase above into concrete actions)
         (throw (cucumber.api.PendingException.))))
 
 (step :When #"^I do a thing$"
-      (fn I-do-a-thing []
+      (fn I-do-a-thing [state]
         (comment  Write code here that turns the phrase above into concrete actions)
         (throw (cucumber.api.PendingException.))))
 
 (step :Then #"^the setup happened$"
-      (fn the-setup-happened []
+      (fn the-setup-happened [state]
         (comment  Write code here that turns the phrase above into concrete actions)
         (throw (cucumber.api.PendingException.))))
 
 (step :Then #"^the thing happened$"
-      (fn the-thing-happened []
+      (fn the-thing-happened [state]
         (comment  Write code here that turns the phrase above into concrete actions)
         (throw (cucumber.api.PendingException.))))
 #+end_example
@@ -78,25 +79,22 @@ You can implement missing steps with the snippets below:
 Fill out the body as appropriate.
 
 #+begin_src clojure
-  (def test-state (atom {}))
-
   (def steps
     [(step :Given #"^some setup$"
-           (fn some-setup []
-             (reset! test-state nil)
-             (swap! test-state assoc :setup-happened true)))
+           (fn some-setup [_]
+             {:setup-happened true}))
 
      (step :When #"^I do a thing$"
-           (fn I-do-a-thing []
-             (swap! test-state assoc :thing-happened true)))
+           (fn I-do-a-thing [state]
+             (assoc state :thing-happened true)))
 
      (step :Then #"^the setup happened$"
-           (fn the-setup-happened []
-             (assert (:setup-happened @test-state))))
+           (fn the-setup-happened [state]
+             (assert (:setup-happened state))))
 
      (step :Then #"^the thing happened$"
-           (fn the-thing-happened []
-             (assert (:thing-happened @test-state))))])
+           (fn the-thing-happened [state]
+             (assert (:thing-happened state))))])
 #+end_src
 
 *NB* You should use =assert= in your step defs rather than clojure.test's =
@@ -128,19 +126,46 @@ Feature: A passing feature
 Ran 1 tests containing 1 assertions.
 0 failures, 0 errors.
 #+end_example
+** Steps
+Steps are maps. The =step= macro is provided to seamlessly populate the line
+number information in them, which the cucumber library uses when printing
+results.
+
+The first parameter to each step function is a state variable. This is passed
+between steps; the value returned by =:Given= and =:When= functions is used as
+the state value for subsequent steps. =:Then= functions cannot modify the state,
+so they don't need to return anything.
 
 ** Hooks
 You can add hooks, too, alongside your steps. Use the =hook= macro to make them.
 #+begin_src clojure
   (def steps
     ;; these happen before and after the scenario
-    [(hook :before (fn before-hook [] ...)
-     (hook :after (fn after-hook [] ...)
+    [(hook :before (fn before-hook [state] ...))
+     (hook :after (fn after-hook [state] ...))
      ;; these happen before and after each step
-     (hook :before-step (fn before-step-hook [] ...)
-     (hook :after-step (fn after-step-hook [] ...)
+     (hook :before-step (fn before-step-hook [state] ...))
+     (hook :after-step (fn after-step-hook [state] ...))
 
      (step :Given ...)])
+#+end_src
+
+As with steps, all hook functions are passed the state, and their return value
+is used as the new state.
+
+** Generative tests
+You can write generative (property-based) tests with your gherkin specs! This is
+effectively a special mode; the `auxon.clj-cucumber.generative` namespace
+defines a =before-hook= and =after-hook= that use the environment to accumulate
+generators and properties as the feature executes, then check them at the end.
+
+See [[file:test/auxon/clj_cucumber/generative_test.clj]] and
+[[file:test/auxon/clj_cucumber/features/generative.feature]] for an example of how
+to do this.
+
+** Testing
+#+begin_src sh
+  clj -A:test:runner
 #+end_src
 ** License
 Copyright © 2019 Russell Mull
