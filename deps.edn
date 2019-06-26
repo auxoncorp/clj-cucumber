@@ -1,6 +1,7 @@
 {:paths ["resources" "src"]
  :deps {org.clojure/clojure {:mvn/version "RELEASE"}
-        io.cucumber/cucumber-java {:mvn/version "4.3.1"}}
+        io.cucumber/cucumber-java {:mvn/version "4.3.1"}
+        org.clojure/test.check {:mvn/version "0.10.0-alpha4"}}
  :aliases
  {:test {:extra-paths ["test"]
          :extra-deps {org.clojure/test.check {:mvn/version "RELEASE"}}}
