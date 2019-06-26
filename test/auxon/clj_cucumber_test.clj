@@ -54,10 +54,10 @@
              "after" (assert (= val (:after-step-count state))))))])
 
 (deftest passing-feature
-  (is (= 0 (run-cucumber "test/auxon/features/passing.feature" steps)))
+  (is (= 0 (run-cucumber "test/auxon/clj_cucumber/features/passing.feature" steps)))
   ;; Can't check this inside the spec because it doesn't happen until after it's
   ;; done
   (is @after-hook-happened))
 
 (deftest failing-feature
-  (is (= 1 (run-cucumber "test/auxon/features/failing.feature" steps))))
+  (is (= 1 (run-cucumber "test/auxon/clj_cucumber/features/failing.feature" steps))))

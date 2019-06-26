@@ -1,4 +1,4 @@
-(ns auxon.generative
+(ns auxon.clj-cucumber.generative-test
   (:require
    [auxon.clj-cucumber :refer [hook run-cucumber step]]
    [auxon.clj-cucumber.generative :as cgen :refer (generator property)]
@@ -32,4 +32,4 @@
    cgen/after-hook])
 
 (deftest generative-feature
-  (is (= 0 (run-cucumber "test/auxon/features/generative.feature" steps))))
+  (is (= 0 (run-cucumber "test/auxon/clj_cucumber/features/generative.feature" steps))))
