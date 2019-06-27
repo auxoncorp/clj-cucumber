@@ -20,7 +20,7 @@
   (StepExpressionFactory.
    (TypeRegistry. java.util.Locale/ENGLISH)))
 
-(defn- make-step-def [pattern step-fn arg-count file line state-atom update-state?]
+(defn- make-step-def [pattern step-fn arg-count file line state-atom]
   (let [expression (.createExpression step-expr-factory (str pattern))
         arg-matcher (ExpressionArgumentMatcher. expression)
         arg-types (make-array java.lang.reflect.Type 0)]
@@ -36,8 +36,7 @@
 
       (execute [_ args]
         (let [new-state (apply step-fn @state-atom args)]
-          (when update-state?
-            (reset! state-atom new-state))))
+          (reset! state-atom new-state)))
 
       (isDefinedAt [_ stack-trace-element]
         (and (= (.getLineNumber stack-trace-element) line)
@@ -110,9 +109,7 @@
         (doseq [{:keys [kw pattern fn file line]} steps]
           (.addStepDefinition glue (make-step-def pattern fn
                                                   nil ; arg-count
-                                                  file line state-atom
-                                                  ;; Allow state updates for Givens and Whens
-                                                  (#{:Given :When} kw)))))
+                                                  file line state-atom))))
 
       (buildWorld [this])
       (disposeWorld [this])

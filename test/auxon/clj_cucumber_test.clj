@@ -37,21 +37,25 @@
 
    (step :Then #"^the setup happened$"
          (fn the-setup-happened [state]
-           (assert (:setup-happened state))))
+           (assert (:setup-happened state))
+           state))
 
    (step :Then #"^the before hook happened$"
          (fn the-before-hook-happened [state]
-           (assert (:before-hook-happened state))))
+           (assert (:before-hook-happened state))
+           state))
 
    (step :Then #"^the thing happened$"
          (fn the-thing-happened [state]
-           (assert (:thing-happened state))))
+           (assert (:thing-happened state))
+           state))
 
    (step :Then #"^the (\w+) step counter is (\d+)$"
          (fn the-step-counter-is [state kind val]
            (case kind
              "before" (assert (= val (:before-step-count state)))
-             "after" (assert (= val (:after-step-count state))))))])
+             "after" (assert (= val (:after-step-count state))))
+           state))])
 
 (deftest passing-feature
   (is (= 0 (run-cucumber "test/auxon/clj_cucumber/features/passing.feature" steps)))
