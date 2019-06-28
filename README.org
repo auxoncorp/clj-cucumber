@@ -136,6 +136,16 @@ results.
 The first parameter to each step function is a state variable. This is passed
 between steps; the return value of one step is the state passed to the next.
 
+* Other Features
+** Parameters
+As with most cucumber implementations, regex subgroups are turned into paramters to your step functions. 
+#+begin_src clojure
+  (def steps
+   [(step :When #"^I do (\d+) things$"
+           (fn I-do-int-things [x]
+             ...))])
+#+end_src
+
 ** Hooks
 You can add hooks, too, alongside your steps. Use the =hook= macro to make them.
 #+begin_src clojure
