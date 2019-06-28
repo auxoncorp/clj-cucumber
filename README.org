@@ -165,7 +165,7 @@ is used as the new state.
 
 ** Generative tests
 You can write generative (property-based) tests with your gherkin specs! This is
-effectively a special mode; the `auxon.clj-cucumber.generative` namespace
+effectively a special mode; the =auxon.clj-cucumber.generative= namespace
 defines a =before-hook= and =after-hook= that use the environment to accumulate
 generators and properties as the feature executes, then check them at the end.
 You can use the =generator=, =property=, and =step= macros defined there to
@@ -182,7 +182,7 @@ to do this.
   the property holds, instead of using an assertion.
 - Don't mix and match regular steps with generative steps.
 
-** Testing
+** Testing this code
 #+begin_src sh
   clj -A:test:runner
 #+end_src
