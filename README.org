@@ -90,11 +90,13 @@ Fill out the body as appropriate.
 
      (step :Then #"^the setup happened$"
            (fn the-setup-happened [state]
-             (assert (:setup-happened state))))
+             (assert (:setup-happened state))
+             state))
 
      (step :Then #"^the thing happened$"
            (fn the-thing-happened [state]
-             (assert (:thing-happened state))))])
+             (assert (:thing-happened state))
+             state))])
 #+end_src
 
 *NB* You should use =assert= in your step defs rather than clojure.test's =
@@ -132,9 +134,7 @@ number information in them, which the cucumber library uses when printing
 results.
 
 The first parameter to each step function is a state variable. This is passed
-between steps; the value returned by =:Given= and =:When= functions is used as
-the state value for subsequent steps. =:Then= functions cannot modify the state,
-so they don't need to return anything.
+between steps; the return value of one step is the state passed to the next.
 
 ** Hooks
 You can add hooks, too, alongside your steps. Use the =hook= macro to make them.
@@ -158,17 +158,29 @@ You can write generative (property-based) tests with your gherkin specs! This is
 effectively a special mode; the `auxon.clj-cucumber.generative` namespace
 defines a =before-hook= and =after-hook= that use the environment to accumulate
 generators and properties as the feature executes, then check them at the end.
+You can use the =generator=, =property=, and =step= macros defined there to
+write the test backend. Note that when you do this, all the test execution is
+actually happening inside the after hook, so the cucumber test runner can't
+localize the failures as well.
 
 See [[file:test/auxon/clj_cucumber/generative_test.clj]] and
 [[file:test/auxon/clj_cucumber/features/generative.feature]] for an example of how
 to do this.
 
+*Generative Testing Tips*
+- In generative test =property= functions, simply return a bool to indicate if
+  the property holds, instead of using an assertion.
+- Don't mix and match regular steps with generative steps.
+
 ** Testing
 #+begin_src sh
   clj -A:test:runner
 #+end_src
+
+You may see some console traffic that looks like a failure; that's because there
+are tests which check that failures are caught, and they print. It's expected.
 ** License
-Copyright © 2019 Russell Mull
+Copyright © 2019 Auxon Corporation
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
