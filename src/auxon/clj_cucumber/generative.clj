@@ -9,6 +9,11 @@
        :doc "The number of quick-check iterations to run"}
   *quick-check-iterations* 100)
 
+(def ^{:dynamic true
+       :doc "Disable test.check shrinking."}
+  *no-shrinking* false)
+
+
 (def before-hook
   "A hook which initializes the test state for generative testing support."
   (cuke/hook
@@ -107,9 +112,13 @@
   (cuke/hook
    :after
    (fn [state]
-     (let [res (tc/quick-check
+     (let [env-gen (::env-gen state)
+           env-gen (if *no-shrinking*
+                     (gen/no-shrink env-gen)
+                     env-gen)
+           res (tc/quick-check
                 *quick-check-iterations*
-                (prop/for-all [generated-env (::env-gen state)]
+                (prop/for-all [generated-env env-gen]
                   (let [env (-> {::scenario-name (::scenario-name state)}
                                 (run-steps (::pre-generator-steps state))
                                 (merge generated-env)
