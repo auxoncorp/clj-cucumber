@@ -15,7 +15,12 @@
    :before
    (fn [_]
      {::env-gen (gen/return {})
-      ::properties []})))
+      ::scenario-name cuke/*current-scenario-name*
+      ::properties []
+      ::pre-generator-steps []
+      ::post-generator-steps []
+      ::before-generators? true
+      ::after-generators? false})))
 
 (defmacro generator
   "Create a generator step.
@@ -39,15 +44,17 @@
       :file ~*file*
       :fn (fn generator-step-fn# [state# & args#]
             (let [mk-gen-fn# ~mk-gen-fn]
-              (update state#
-                      ::env-gen
-                      gen/bind
-                      (fn generator-bind-fn# [env#]
-                        (if-let [[key# gen#] (apply mk-gen-fn# env# args#)]
-                          (->> gen# (gen/fmap (fn [val#]
-                                                (assoc env# key# val#))))
-                          ;; no new bindings; just pass through.
-                          (gen/return env#))))))}))
+              (assert (not (::after-generators? state#))
+                      "All generators must be in a block; don't mix them with regular steps.")
+              (-> state#
+                  (update ::env-gen
+                          gen/bind (fn generator-bind-fn# [env#]
+                                     (if-let [[key# gen#] (apply mk-gen-fn# env# args#)]
+                                       (->> gen# (gen/fmap (fn [val#]
+                                                             (assoc env# key# val#))))
+                                       ;; no new bindings; just pass through.
+                                       (gen/return env#))))
+                  (assoc ::before-generators? false))))}))
 
 (defmacro step
   "Create a normal step that is executed in a generative test context.
@@ -64,8 +71,11 @@
       :file ~*file*
       :fn (fn step-fn# [state# & args#]
             (let [step-closure# (fn [env#] (apply ~f env# args#))]
-              (update state# ::env-gen (fn [env-gen#]
-                                         (gen/fmap step-closure# env-gen#)))))}))
+              (if (::before-generators? state#)
+                (update state# ::pre-generator-steps conj step-closure#)
+                (-> state#
+                    (update ::post-generator-steps conj step-closure#)
+                    (assoc ::after-generators? true)))))}))
 
 (defmacro property
   "Create a property step.
@@ -88,15 +98,23 @@
             (update state# ::properties conj
                     (fn [env#] (apply ~pred env# args#))))}))
 
+(defn- run-steps [in-env steps]
+  (reduce (fn [env step]
+            (step env))
+          in-env steps))
+
 (defn after-hook-with-cleanup [cleanup]
   (cuke/hook
    :after
    (fn [state]
      (let [res (tc/quick-check
                 *quick-check-iterations*
-                (prop/for-all [env (::env-gen state)]
-                  ;; (println "props:" (count (::properties state)))
-                  (let [ok (every? (fn [prop] (try
+                (prop/for-all [generated-env (::env-gen state)]
+                  (let [env (-> {::scenario-name (::scenario-name state)}
+                                (run-steps (::pre-generator-steps state))
+                                (merge generated-env)
+                                (run-steps (::post-generator-steps state)))
+                        ok (every? (fn [prop] (try
                                                 (prop env)
                                                 (catch Exception e
                                                   (println "Prop exception" e)
