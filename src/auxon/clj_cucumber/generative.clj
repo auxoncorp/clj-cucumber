@@ -104,9 +104,11 @@
                     (fn [env#] (apply ~pred env# args#))))}))
 
 (defn- run-steps [in-env steps]
-  (reduce (fn [env step]
-            (step env))
-          in-env steps))
+  (if (seq in-env)
+    (reduce (fn [env step]
+              (step env))
+            in-env steps)
+    in-env))
 
 (defn after-hook-with-cleanup [cleanup]
   (cuke/hook
