@@ -16,6 +16,8 @@
                                StepExpressionFactory
                                TypeRegistry)))
 
+(def ^:dynamic *current-scenario-name* nil)
+
 (def ^:private step-expr-factory
   (StepExpressionFactory.
    (TypeRegistry. java.util.Locale/ENGLISH)))
@@ -52,8 +54,9 @@
   (reify HookDefinition
     (getLocation [_ detail] (str file ":" line))
     (execute [_ scenario]
-      (let [new-state (f @state-atom)]
-        (reset! state-atom new-state)))
+      (binding [*current-scenario-name* (.getName scenario)]
+        (let [new-state (f @state-atom)]
+          (reset! state-atom new-state))))
     (matches [_ tags] true)
     (getOrder [_] order)
     (isScenarioScoped [_] false)))
